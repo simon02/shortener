@@ -1,6 +1,7 @@
 class Shortener::ShortenedUrl < ActiveRecord::Base
 
-  REGEX_LINK_HAS_PROTOCOL = Regexp.new('\Ahttp:\/\/|\Ahttps:\/\/', Regexp::IGNORECASE)
+  URL_PROTOCOL_HTTP = "http://"
+  REGEX_LINK_HAS_PROTOCOL = Regexp.new('\Ahttp:\/\/|\Ahttps:\/\/|\A\/', Regexp::IGNORECASE)
 
   validates :url, presence: true
 
@@ -10,13 +11,11 @@ class Shortener::ShortenedUrl < ActiveRecord::Base
   # exclude records in which expiration time is set and expiration time is greater than current time
   scope :unexpired, -> { where(arel_table[:expires_at].eq(nil).or(arel_table[:expires_at].gt(::Time.current.to_s(:db)))) }
 
-  # ensure the url starts with it protocol and is normalized
+  # ensure the url starts with a protocol and is normalized
   def self.clean_url(url)
-
+    return nil if url.blank?
     url = url.to_s.strip
-    if url !~ REGEX_LINK_HAS_PROTOCOL && url[0] != '/'
-      url = "/#{url}"
-    end
+    url = URL_PROTOCOL_HTTP + url unless url =~ REGEX_LINK_HAS_PROTOCOL
     URI.parse(url).normalize.to_s
   end
 
